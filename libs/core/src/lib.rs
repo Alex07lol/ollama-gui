@@ -19,7 +19,9 @@ pub mod workspace {
 
     impl WorkspaceEngine {
         pub fn new() -> Self {
-            Self { active_workspace: None }
+            Self {
+                active_workspace: None,
+            }
         }
 
         pub fn set_active(&mut self, ws: Workspace) {

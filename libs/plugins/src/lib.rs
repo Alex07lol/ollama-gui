@@ -14,7 +14,9 @@ pub struct PluginManager {
 
 impl PluginManager {
     pub fn new() -> Self {
-        Self { loaded_plugins: Vec::new() }
+        Self {
+            loaded_plugins: Vec::new(),
+        }
     }
 
     pub fn load_plugin(&mut self, metadata: PluginMetadata) {
