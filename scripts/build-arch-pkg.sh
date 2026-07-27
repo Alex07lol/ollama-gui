@@ -32,7 +32,7 @@ license=("MIT")
 depends=("webkit2gtk-4.1" "gtk3" "cairo" "pango" "glib2")
 
 package() {
-  install -Dm755 "$startdir/apps/desktop/src-tauri/target/release/ollama-desktop" "$pkgdir/usr/bin/ollama-gui"
+  install -Dm755 "$startdir/target/release/ollama-desktop" "$pkgdir/usr/bin/ollama-gui"
   
   mkdir -p "$pkgdir/usr/share/applications"
   cat << DESK > "$pkgdir/usr/share/applications/ollama-gui.desktop"
