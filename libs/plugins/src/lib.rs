@@ -8,15 +8,14 @@ pub struct PluginMetadata {
     pub entrypoint: String,
 }
 
+#[derive(Default)]
 pub struct PluginManager {
     loaded_plugins: Vec<PluginMetadata>,
 }
 
 impl PluginManager {
     pub fn new() -> Self {
-        Self {
-            loaded_plugins: Vec::new(),
-        }
+        Self::default()
     }
 
     pub fn load_plugin(&mut self, metadata: PluginMetadata) {

@@ -13,15 +13,14 @@ pub mod workspace {
         pub custom_rules: String,
     }
 
+    #[derive(Default)]
     pub struct WorkspaceEngine {
         active_workspace: Option<Workspace>,
     }
 
     impl WorkspaceEngine {
         pub fn new() -> Self {
-            Self {
-                active_workspace: None,
-            }
+            Self::default()
         }
 
         pub fn set_active(&mut self, ws: Workspace) {
