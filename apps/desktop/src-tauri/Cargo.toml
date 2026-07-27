@@ -1,0 +1,19 @@
+[package]
+name = "ollama-desktop"
+version = "0.1.0"
+edition = "2021"
+description = "Tauri backend application for Ollama GUI"
+
+[build-dependencies]
+tauri-build = { version = "1.0", optional = false }
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tauri = { version = "1.0", features = ["api-all"] }
+ollama-core = { path = "../../../libs/core" }
+ollama-api = { path = "../../../libs/ollama-api" }
+
+[features]
+default = [ "custom-protocol" ]
+custom-protocol = [ "tauri/custom-protocol" ]

@@ -1,0 +1,9 @@
+[workspace]
+members = [
+  "apps/desktop/src-tauri",
+  "apps/cli",
+  "libs/core",
+  "libs/ollama-api",
+  "libs/plugins"
+]
+resolver = "2"

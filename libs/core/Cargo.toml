@@ -1,0 +1,11 @@
+[package]
+name = "ollama-core"
+version = "0.1.0"
+edition = "2021"
+description = "Core workspace, context, and memory engine library for Ollama GUI"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1.0", features = ["full"] }
+ollama-api = { path = "../ollama-api" }

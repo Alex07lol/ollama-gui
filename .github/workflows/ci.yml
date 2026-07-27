@@ -1,0 +1,77 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # 1. Frontend Checks: Lint, Formats, and Builds
+  frontend-ci:
+    name: Frontend CI (React TypeScript)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: apps/desktop/package-lock.json
+
+      - name: Install Frontend Dependencies
+        run: npm ci
+        working-directory: apps/desktop
+
+      - name: Verify Linting
+        run: npm run lint
+        working-directory: apps/desktop
+        continue-on-error: true
+
+      - name: Verify Production Compilation
+        run: npm run build
+        working-directory: apps/desktop
+
+  # 2. Backend Checks: Clippy, Format, Tests
+  backend-ci:
+    name: Backend CI (Rust Cargo Workspace)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Tauri Build Dependencies (Linux)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libsoup-3.0-dev \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libssl-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      - name: Setup Rust Toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+          components: clippy, rustfmt
+
+      - name: Check Rust Formatting
+        run: cargo fmt --all -- --check
+
+      - name: Check Workspace Code Lints
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+
+      - name: Run Backend Integration & Unit Tests
+        run: cargo test --workspace --all-features
