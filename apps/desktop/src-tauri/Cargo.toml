@@ -5,15 +5,18 @@ edition = "2021"
 description = "Tauri backend application for Ollama GUI"
 
 [build-dependencies]
-tauri-build = { version = "1.0", optional = false }
+tauri-build = { version = "2.0.0", optional = false }
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-tauri = { version = "1.0", features = ["api-all"] }
+tauri = { version = "2.0.0", features = [] }
 ollama-core = { path = "../../../libs/core" }
 ollama-api = { path = "../../../libs/ollama-api" }
 
-[features]
-default = [ "custom-protocol" ]
-custom-protocol = [ "tauri/custom-protocol" ]
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true
