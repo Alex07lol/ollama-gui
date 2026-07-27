@@ -17,7 +17,7 @@ rustup default stable
 # Build desktop app
 cd apps/desktop
 npm ci
-npx tauri build --no-bundle
+npx tauri build --bundles none
 
 # Write package metadata
 cd /workspace

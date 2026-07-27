@@ -1,14 +1,16 @@
 {
-  "productName": "Ollama GUI",
-  "version": "0.1.0",
-  "identifier": "com.ollama.gui",
-  "build": {
-    "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build",
-    "devUrl": "http://localhost:5173",
-    "frontendDist": "../dist"
+  "package": {
+    "productName": "Ollama GUI",
+    "version": "0.1.0"
   },
-  "app": {
+  "tauri": {
+    "identifier": "com.ollama.gui",
+    "build": {
+      "beforeDevCommand": "npm run dev",
+      "beforeBuildCommand": "npm run build",
+      "devPath": "http://localhost:5173",
+      "distDir": "../dist"
+    },
     "windows": [
       {
         "label": "main",
@@ -24,17 +26,17 @@
     ],
     "security": {
       "csp": null
+    },
+    "bundle": {
+      "active": true,
+      "targets": ["appimage", "deb", "nsis"],
+      "icon": [
+        "icons/32x32.png",
+        "icons/128x128.png",
+        "icons/128x128@2x.png",
+        "icons/icon.icns",
+        "icons/icon.ico"
+      ]
     }
-  },
-  "bundle": {
-    "active": true,
-    "targets": ["appimage", "deb", "nsis"],
-    "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
-    ]
   }
 }
