@@ -62,7 +62,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ollama-gui-android-apk
-          path: apps/desktop/src-tauri/gen/android/app/build/outputs/apk/release/*.apk
+          path: apps/desktop/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
           if-no-files-found: error
           retention-days: 30
 
@@ -70,5 +70,5 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: apps/desktop/src-tauri/gen/android/app/build/outputs/apk/release/*.apk
+          files: apps/desktop/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
           token: ${{ secrets.GITHUB_TOKEN }}
