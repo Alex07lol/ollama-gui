@@ -19,6 +19,8 @@ interface ChatAreaProps {
   onUpdateConversationMode: (mode: 'chat' | 'planning') => void;
   onExecuteAction: (stepId: string, actionType: string, target: string, content?: string) => Promise<void>;
   stepLogs: { [stepId: string]: string };
+  onNewConversation?: () => void;
+  updateAvailable?: string | null;
 }
 
 export const ChatArea: React.FC<ChatAreaProps> = ({
@@ -36,6 +38,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   onUpdateConversationMode,
   onExecuteAction,
   stepLogs,
+  onNewConversation,
+  updateAvailable,
 }) => {
   const [input, setInput] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -84,9 +88,18 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
         <div style={{ textAlign: 'center', maxWidth: '320px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <img src={ollamaLogo} alt="Ollama Logo" style={{ width: '48px', height: '48px', margin: '0 auto 8px auto', borderRadius: '8px' }} />
           <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Welcome to Ollama GUI</span>
-          <p style={{ fontSize: '11.5px', lineHeight: '1.4' }}>
-            Select a conversation from the sidebar or click "New Chat" to begin interacting with your local LLMs.
+          <p style={{ fontSize: '11.5px', lineHeight: '1.4', marginBottom: '8px' }}>
+            Select a conversation from the sidebar or click below to begin interacting with your local LLMs.
           </p>
+          {onNewConversation && (
+            <button 
+              className="primary" 
+              onClick={onNewConversation} 
+              style={{ padding: '6px 12px', fontSize: '11.5px', alignSelf: 'center', marginTop: '4px' }}
+            >
+              Start New Chat
+            </button>
+          )}
         </div>
       </div>
     );
@@ -180,6 +193,33 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
   return (
     <div className="main-content">
+      {updateAvailable && (
+        <div 
+          style={{ 
+            backgroundColor: 'var(--bg-secondary)', 
+            borderBottom: '1px solid var(--border-primary)', 
+            padding: '8px 14px', 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            fontSize: '11px',
+            color: 'var(--text-secondary)'
+          }}
+        >
+          <span>
+            A new version of Ollama GUI is available: <strong>{updateAvailable}</strong>
+          </span>
+          <a 
+            href="https://github.com/Alex07lol/ollama-gui/releases/latest" 
+            target="_blank" 
+            rel="noreferrer" 
+            className="primary button" 
+            style={{ padding: '3px 8px', fontSize: '10.5px', textDecoration: 'none', borderRadius: '3px', color: '#fff' }}
+          >
+            Download
+          </a>
+        </div>
+      )}
       {/* Topbar */}
       <div 
         style={{ 

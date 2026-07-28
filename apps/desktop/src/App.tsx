@@ -56,6 +56,7 @@ export default function App() {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isWorkspaceModalOpen, setIsWorkspaceModalOpen] = useState(false);
   const [isWorkspaceConfigMode, setIsWorkspaceConfigMode] = useState(false); // edit vs create
+  const [updateAvailable, setUpdateAvailable] = useState<string | null>(null);
 
   // Agent generation & Execution States
   const [isGenerating, setIsGenerating] = useState(false);
@@ -126,6 +127,30 @@ export default function App() {
     }, 15000);
     return () => clearInterval(timer);
   }, [ollamaHost, isGenerating]);
+
+  // GitHub Releases Updater Check Effect
+  useEffect(() => {
+    const checkUpdates = async () => {
+      try {
+        const response = await fetch('https://api.github.com/repos/Alex07lol/ollama-gui/releases/latest');
+        if (response.ok) {
+          const data = await response.json();
+          const latestVersion = data.tag_name; // e.g. "v1" or "v1.1.0"
+          const currentVersion = 'v0.1.0'; // Current local package compilation version
+          
+          const latestClean = latestVersion.replace(/^v/, '');
+          const currentClean = currentVersion.replace(/^v/, '');
+          
+          if (latestClean !== currentClean && latestClean > currentClean) {
+            setUpdateAvailable(latestVersion);
+          }
+        }
+      } catch (err) {
+        console.warn('Update check failed:', err);
+      }
+    };
+    checkUpdates();
+  }, []);
 
   // Global Keyboard Shortcuts
   useEffect(() => {
@@ -809,6 +834,8 @@ Keep steps simple, actionable, and checklist-formatted.
         onUpdateConversationMode={handleUpdateConversationMode}
         onExecuteAction={handleExecuteAction}
         stepLogs={stepLogs}
+        onNewConversation={handleNewConversation}
+        updateAvailable={updateAvailable}
       />
 
       {/* 3. Right Parameters Panel */}
