@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { Stop, Refresh, Copy, Check, Cpu, Server, Clip, Image as ImageIcon, File as FileIcon, Close } from './Icons';
 import type { Conversation, ConnectionStatus } from '../types';
 import { Markdown } from './Markdown';
+import ollamaLogo from '../assets/logo.jpg';
 
 interface ChatAreaProps {
   conversation: Conversation | null;
@@ -81,7 +82,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     return (
       <div className="main-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
         <div style={{ textAlign: 'center', maxWidth: '320px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <Server size={24} style={{ margin: '0 auto 8px auto', color: 'var(--text-muted)' }} />
+          <img src={ollamaLogo} alt="Ollama Logo" style={{ width: '48px', height: '48px', margin: '0 auto 8px auto', borderRadius: '8px' }} />
           <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Welcome to Ollama GUI</span>
           <p style={{ fontSize: '11.5px', lineHeight: '1.4' }}>
             Select a conversation from the sidebar or click "New Chat" to begin interacting with your local LLMs.

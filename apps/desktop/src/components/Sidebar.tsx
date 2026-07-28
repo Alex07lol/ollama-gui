@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Settings, Server, Trash, Edit, Keyboard, Download, Upload } from './Icons';
 import type { Conversation, ConnectionStatus, Workspace } from '../types';
+import ollamaLogo from '../assets/logo.jpg';
 
 interface SidebarProps {
   workspaces: Workspace[];
@@ -83,9 +84,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
         }}
       >
         <div className="flex justify-between items-center">
-          <span style={{ fontWeight: 600, fontSize: '13px', letterSpacing: '-0.01em', color: 'var(--text-primary)' }}>
-            Ollama GUI
-          </span>
+          <div className="flex items-center gap-2">
+            <img src={ollamaLogo} alt="Ollama Logo" style={{ width: '16px', height: '16px', borderRadius: '3px' }} />
+            <span style={{ fontWeight: 600, fontSize: '13px', letterSpacing: '-0.01em', color: 'var(--text-primary)' }}>
+              Ollama GUI
+            </span>
+          </div>
           <div className="flex items-center gap-1.5" style={{ fontSize: '11px' }}>
             <div 
               style={{ 
