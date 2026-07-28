@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Stop, Refresh, Copy, Check, Cpu, Server, Clip, Image as ImageIcon, File as FileIcon, Close } from './Icons';
+import { Stop, Refresh, Copy, Check, Cpu, Clip, Image as ImageIcon, File as FileIcon, Close } from './Icons';
 import type { Conversation, ConnectionStatus } from '../types';
 import { Markdown } from './Markdown';
 import ollamaLogo from '../assets/logo.jpg';
