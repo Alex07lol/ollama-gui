@@ -44,6 +44,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   const [input, setInput] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'chat' | 'plan'>('chat');
+  const [installing, setInstalling] = useState(false);
   
   // Attachments State
   const [attachedFiles, setAttachedFiles] = useState<{ name: string; content: string; size: number }[]>([]);
@@ -54,6 +55,26 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+
+  const isAndroid = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
+
+  const handleOneClickInstall = async () => {
+    setInstalling(true);
+    try {
+      if ((window as any).__TAURI__) {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const result = await invoke<string>('install_ollama');
+        alert(result);
+      } else {
+        window.open('https://ollama.com/download', '_blank');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Failed to install Ollama: ' + err);
+    } finally {
+      setInstalling(false);
+    }
+  };
 
   // Switch to plan tab automatically when a plan completes
   useEffect(() => {
@@ -84,7 +105,20 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
   if (!conversation) {
     return (
-      <div className="main-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+      <div className="main-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', position: 'relative' }}>
+        {connectionStatus === 'disconnected' && !isAndroid && (
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-primary)', padding: '8px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
+            <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>Ollama is not running or not detected.</span>
+            <button 
+              onClick={handleOneClickInstall}
+              disabled={installing}
+              className="primary"
+              style={{ padding: '3px 8px', fontSize: '10.5px', backgroundColor: 'var(--status-yellow)', borderColor: 'var(--status-yellow)', color: '#000', fontWeight: 600, borderRadius: '4px' }}
+            >
+              {installing ? 'Installing...' : 'One-Click Install'}
+            </button>
+          </div>
+        )}
         <div style={{ textAlign: 'center', maxWidth: '320px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <img src={ollamaLogo} alt="Ollama Logo" style={{ width: '48px', height: '48px', margin: '0 auto 8px auto', borderRadius: '8px' }} />
           <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Welcome to Ollama GUI</span>
@@ -248,6 +282,25 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
               {conversation.model}
             </span>
           </div>
+          {connectionStatus === 'disconnected' && !isAndroid && (
+            <button 
+              onClick={handleOneClickInstall}
+              disabled={installing}
+              className="primary"
+              style={{
+                padding: '2px 8px',
+                fontSize: '10.5px',
+                backgroundColor: 'var(--status-yellow)',
+                borderColor: 'var(--status-yellow)',
+                color: '#000',
+                fontWeight: 600,
+                borderRadius: '4px',
+                marginLeft: '8px'
+              }}
+            >
+              {installing ? 'Installing...' : 'One-Click Install'}
+            </button>
+          )}
         </div>
 
         {/* Tab Selection Row (If planning mode is active) */}

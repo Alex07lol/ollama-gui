@@ -312,3 +312,120 @@ kbd {
   gap: 8px;
   background-color: var(--bg-primary);
 }
+
+/* ==================== COMPACT UI OVERRIDES ==================== */
+body {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+button {
+  padding: 4px 10px;
+  border-radius: 5px;
+  font-size: 12px;
+}
+
+input[type="text"], input[type="number"], input[type="password"], textarea, select {
+  padding: 4px 8px;
+  border-radius: 5px;
+  font-size: 12px;
+}
+
+.sidebar {
+  width: 210px;
+  min-width: 210px;
+}
+
+.parameters-panel {
+  width: 230px;
+  min-width: 230px;
+}
+
+/* Tighten ChatArea margins and message padding */
+.message-row {
+  margin-bottom: 8px !important;
+}
+
+.chat-message {
+  padding: 6px 10px !important;
+  font-size: 12.5px !important;
+}
+
+/* ==================== ANDROID DRAWER ANIMATIONS ==================== */
+.sidebar-wrapper {
+  display: none;
+  height: 100%;
+}
+.sidebar-wrapper.open {
+  display: flex;
+}
+
+.params-wrapper {
+  display: none;
+  height: 100%;
+}
+.params-wrapper.open {
+  display: flex;
+}
+
+/* Android Device specific overrides */
+.is-android .sidebar-wrapper {
+  display: flex !important;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 55;
+  transform: translateX(-100%);
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.6);
+}
+.is-android .sidebar-wrapper.open {
+  transform: translateX(0);
+}
+
+.is-android .params-wrapper {
+  display: flex !important;
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  z-index: 55;
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.6);
+}
+.is-android .params-wrapper.open {
+  transform: translateX(0);
+}
+
+.is-android .android-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+  z-index: 45;
+  animation: androidFadeIn 0.25s ease-out forwards;
+}
+
+/* Smooth Android Message Appearance Animation */
+.is-android .message-row {
+  opacity: 0;
+  transform: translateY(12px);
+  animation: androidMessageSlideIn 0.3s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+}
+
+@keyframes androidFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes androidMessageSlideIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -10,6 +10,8 @@ import { parsePlan } from './utils/planParser';
 import type { Conversation, Message, OllamaModel, ConnectionStatus, Workspace, ConversationMode, PlanStep } from './types';
 
 export default function App() {
+  const isAndroid = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
+
   // 1. Host & Key Settings
   const [ollamaHost, setOllamaHost] = useState(() => {
     return localStorage.getItem('ollama_host') || 'http://localhost:11434';
@@ -17,6 +19,17 @@ export default function App() {
   const [enterToSend, setEnterToSend] = useState(() => {
     const val = localStorage.getItem('enter_to_send');
     return val === null ? true : val === 'true';
+  });
+
+  // Cloud API parameters (for Android only fallback)
+  const [cloudBaseUrl, setCloudBaseUrl] = useState(() => {
+    return localStorage.getItem('cloud_base_url') || 'https://openrouter.ai/api/v1';
+  });
+  const [cloudApiKey, setCloudApiKey] = useState(() => {
+    return localStorage.getItem('cloud_api_key') || '';
+  });
+  const [cloudModel, setCloudModel] = useState(() => {
+    return localStorage.getItem('cloud_model') || 'google/gemini-2.5-flash';
   });
 
   // 2. Isolated Workspaces State
@@ -46,11 +59,11 @@ export default function App() {
 
   // Connection & Models
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('checking');
-  const [models, setModels] = useState<OllamaModel[]>([]);
+  const [localModels, setLocalModels] = useState<OllamaModel[]>([]);
 
-  // Toggles
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isParamsOpen, setIsParamsOpen] = useState(true);
+  // Toggles (Close by default on Android to showcase only active chat space)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(!isAndroid);
+  const [isParamsOpen, setIsParamsOpen] = useState(!isAndroid);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isModelManagerOpen, setIsModelManagerOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
@@ -81,20 +94,88 @@ export default function App() {
     localStorage.setItem('enter_to_send', String(enterToSend));
   }, [enterToSend]);
 
+  useEffect(() => {
+    localStorage.setItem('cloud_base_url', cloudBaseUrl);
+  }, [cloudBaseUrl]);
+
+  useEffect(() => {
+    localStorage.setItem('cloud_api_key', cloudApiKey);
+  }, [cloudApiKey]);
+
+  useEffect(() => {
+    localStorage.setItem('cloud_model', cloudModel);
+  }, [cloudModel]);
+
+  // Set platform body class on Android
+  useEffect(() => {
+    if (isAndroid) {
+      document.body.classList.add('is-android');
+    } else {
+      document.body.classList.remove('is-android');
+    }
+  }, [isAndroid]);
+
   // Derived state helpers
   const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId) || workspaces[0];
   const conversations = activeWorkspace ? activeWorkspace.conversations : [];
   const activeConversationId = activeWorkspace ? activeWorkspace.activeConversationId : null;
   const activeConversation = conversations.find((c) => c.id === activeConversationId) || null;
 
-  // Ollama Connection polling
+  // Deriving active models mapping
+  const models: OllamaModel[] = isAndroid
+    ? Array.from(
+        new Set([
+          cloudModel,
+          'google/gemini-2.5-flash',
+          'deepseek/deepseek-chat',
+          'openai/gpt-4o-mini',
+          'openai/gpt-4o',
+          'anthropic/claude-3.5-sonnet',
+          'meta-llama/llama-3.3-70b-instruct',
+        ])
+      )
+        .filter(Boolean)
+        .map((name) => ({
+          name,
+          modified_at: new Date().toISOString(),
+          size: 0,
+          digest: '',
+          details: {
+            parent_model: '',
+            format: 'cloud',
+            family: 'cloud',
+            families: ['cloud'],
+            parameter_size: 'remote',
+            quantization_level: 'none',
+          },
+        }))
+    : localModels;
+
+  // Ollama/Cloud Connection polling
   const testConnection = async () => {
     setConnectionStatus('checking');
+    if (isAndroid) {
+      try {
+        const response = await fetch(`${cloudBaseUrl}/models`, {
+          headers: cloudApiKey ? { 'Authorization': `Bearer ${cloudApiKey}` } : {},
+        });
+        if (response.ok || response.status === 401 || response.status === 403) {
+          setConnectionStatus('connected');
+        } else {
+          setConnectionStatus('disconnected');
+        }
+      } catch (err) {
+        console.error('Cloud API check connection failed', err);
+        setConnectionStatus('disconnected');
+      }
+      return;
+    }
+
     try {
       const response = await fetch(`${ollamaHost}/api/tags`);
       if (response.ok) {
         const data = await response.json();
-        setModels(data.models || []);
+        setLocalModels(data.models || []);
         setConnectionStatus('connected');
       } else {
         throw new Error('Connection failed');
@@ -102,31 +183,45 @@ export default function App() {
     } catch (e) {
       console.error('Connection failure', e);
       setConnectionStatus('disconnected');
-      setModels([]);
+      setLocalModels([]);
     }
   };
 
   useEffect(() => {
     testConnection();
-  }, [ollamaHost]);
+  }, [ollamaHost, cloudBaseUrl, cloudApiKey]);
 
   useEffect(() => {
     const timer = setInterval(() => {
       if (!isGenerating) {
-        fetch(`${ollamaHost}/api/tags`)
-          .then((res) => {
-            if (res.ok) {
-              setConnectionStatus('connected');
-              res.json().then((data) => setModels(data.models || []));
-            } else {
-              setConnectionStatus('disconnected');
-            }
+        if (isAndroid) {
+          fetch(`${cloudBaseUrl}/models`, {
+            headers: cloudApiKey ? { 'Authorization': `Bearer ${cloudApiKey}` } : {},
           })
-          .catch(() => setConnectionStatus('disconnected'));
+            .then((res) => {
+              if (res.status === 200 || res.status === 401 || res.status === 403) {
+                setConnectionStatus('connected');
+              } else {
+                setConnectionStatus('disconnected');
+              }
+            })
+            .catch(() => setConnectionStatus('disconnected'));
+        } else {
+          fetch(`${ollamaHost}/api/tags`)
+            .then((res) => {
+              if (res.ok) {
+                setConnectionStatus('connected');
+                res.json().then((data) => setLocalModels(data.models || []));
+              } else {
+                setConnectionStatus('disconnected');
+              }
+            })
+            .catch(() => setConnectionStatus('disconnected'));
+        }
       }
     }, 15000);
     return () => clearInterval(timer);
-  }, [ollamaHost, isGenerating]);
+  }, [ollamaHost, isGenerating, isAndroid, cloudBaseUrl, cloudApiKey]);
 
   // GitHub Releases Updater Check Effect
   useEffect(() => {
@@ -551,26 +646,44 @@ Keep steps simple, actionable, and checklist-formatted.
         images: images.length > 0 ? images : undefined,
       });
 
-      const response = await fetch(`${ollamaHost}/api/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: activeConv.model,
-          messages: messagesPayload,
-          options: {
-            temperature: activeConv.temperature,
-            num_ctx: activeConv.numCtx,
-            top_p: activeConv.topP,
-            repeat_penalty: activeConv.repeatPenalty,
-            num_predict: activeConv.maxTokens === -1 ? undefined : activeConv.maxTokens,
+      const response = await fetch(
+        isAndroid ? `${cloudBaseUrl}/chat/completions` : `${ollamaHost}/api/chat`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(isAndroid && cloudApiKey ? { 'Authorization': `Bearer ${cloudApiKey}` } : {})
           },
-          stream: true,
-        }),
-        signal: controller.signal,
-      });
+          body: JSON.stringify(
+            isAndroid
+              ? {
+                  model: activeConv.model || cloudModel,
+                  messages: messagesPayload.map((m) => ({
+                    role: m.role,
+                    content: m.content,
+                  })),
+                  temperature: activeConv.temperature,
+                  stream: true,
+                }
+              : {
+                  model: activeConv.model,
+                  messages: messagesPayload,
+                  options: {
+                    temperature: activeConv.temperature,
+                    num_ctx: activeConv.numCtx,
+                    top_p: activeConv.topP,
+                    repeat_penalty: activeConv.repeatPenalty,
+                    num_predict: activeConv.maxTokens === -1 ? undefined : activeConv.maxTokens,
+                  },
+                  stream: true,
+                }
+          ),
+          signal: controller.signal,
+        }
+      );
 
       if (!response.ok) {
-        throw new Error(`Ollama connection error: ${response.statusText}`);
+        throw new Error(`${isAndroid ? 'Cloud API' : 'Ollama'} connection error: ${response.statusText}`);
       }
 
       if (!response.body) {
@@ -591,11 +704,24 @@ Keep steps simple, actionable, and checklist-formatted.
         buffer = lines.pop() || '';
 
         for (const line of lines) {
-          if (!line.trim()) continue;
+          const trimmedLine = line.trim();
+          if (!trimmedLine) continue;
+
           try {
-            const data = JSON.parse(line);
-            if (data.message && data.message.content) {
-              const chunk = data.message.content;
+            let chunk = '';
+            if (isAndroid) {
+              if (trimmedLine.startsWith('data: ')) {
+                const dataStr = trimmedLine.substring(6).trim();
+                if (dataStr === '[DONE]') continue;
+                const data = JSON.parse(dataStr);
+                chunk = data.choices?.[0]?.delta?.content || '';
+              }
+            } else {
+              const data = JSON.parse(trimmedLine);
+              chunk = data.message?.content || '';
+            }
+
+            if (chunk) {
               accumulatedContent += chunk;
 
               setWorkspaces((prev) =>
@@ -621,7 +747,7 @@ Keep steps simple, actionable, and checklist-formatted.
               );
             }
           } catch (err) {
-            console.error('Stream chunk JSON error', err);
+            console.error('Stream chunk parsing error', err);
           }
         }
       }
@@ -789,8 +915,19 @@ Keep steps simple, actionable, and checklist-formatted.
         style={{ display: 'none' }}
       />
 
+      {/* Click-away backdrop on Android only */}
+      {isAndroid && (isSidebarOpen || isParamsOpen) && (
+        <div 
+          className="android-backdrop" 
+          onClick={() => {
+            setIsSidebarOpen(false);
+            setIsParamsOpen(false);
+          }}
+        />
+      )}
+
       {/* 1. Sidebar */}
-      {isSidebarOpen && (
+      <div className={`sidebar-wrapper ${isSidebarOpen ? 'open' : ''}`}>
         <Sidebar
           workspaces={workspaces}
           activeWorkspaceId={activeWorkspaceId}
@@ -816,7 +953,7 @@ Keep steps simple, actionable, and checklist-formatted.
           onExportConversations={handleExportConversations}
           onImportConversations={handleImportConversations}
         />
-      )}
+      </div>
 
       {/* 2. Main Chat Workspace */}
       <ChatArea
@@ -839,14 +976,14 @@ Keep steps simple, actionable, and checklist-formatted.
       />
 
       {/* 3. Right Parameters Panel */}
-      {isParamsOpen && (
+      <div className={`params-wrapper ${isParamsOpen ? 'open' : ''}`}>
         <ParametersPanel
           activeConversation={activeConversation}
           models={models}
           onUpdateParams={handleUpdateParams}
           onOpenModelManager={() => setIsModelManagerOpen(true)}
         />
-      )}
+      </div>
 
       {/* 4. Overlay Modals */}
       <SettingsModal
@@ -858,6 +995,13 @@ Keep steps simple, actionable, and checklist-formatted.
         onTestConnection={testConnection}
         enterToSend={enterToSend}
         setEnterToSend={setEnterToSend}
+        isAndroid={isAndroid}
+        cloudBaseUrl={cloudBaseUrl}
+        onSaveCloudBaseUrl={setCloudBaseUrl}
+        cloudApiKey={cloudApiKey}
+        onSaveCloudApiKey={setCloudApiKey}
+        cloudModel={cloudModel}
+        onSaveCloudModel={setCloudModel}
       />
 
       <ModelManager
