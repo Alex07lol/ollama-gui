@@ -138,11 +138,23 @@ export default function App() {
         new Set([
           cloudModel,
           'google/gemini-2.5-flash',
+          'google/gemini-2.5-pro',
           'deepseek/deepseek-chat',
+          'deepseek/deepseek-coder',
           'openai/gpt-4o-mini',
           'openai/gpt-4o',
+          'openai/o1-mini',
+          'openai/o1-preview',
           'anthropic/claude-3.5-sonnet',
+          'anthropic/claude-3.5-haiku',
           'meta-llama/llama-3.3-70b-instruct',
+          'meta-llama/llama-3-8b-instruct',
+          'mistralai/mixtral-8x22b-instruct',
+          'mistralai/mistral-large',
+          'qwen/qwen-2.5-72b-instruct',
+          'qwen/qwen-2.5-coder-32b-instruct',
+          'x-ai/grok-2',
+          'perplexity/sonar-reasoning',
         ])
       )
         .filter(Boolean)

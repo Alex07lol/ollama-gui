@@ -679,7 +679,9 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
                     {message.error && (
                       <div style={{ color: 'var(--status-red)', marginTop: '8px', fontSize: '11.5px', fontStyle: 'italic' }}>
-                        Connection Error: Make sure Ollama is serving locally and CORS is enabled.
+                        {apiMode === 'cloud' 
+                          ? 'Connection Error: Check your Cloud API endpoint URL, key, or internet connectivity.'
+                          : 'Connection Error: Make sure Ollama is serving locally and CORS is enabled.'}
                       </div>
                     )}
                   </div>
