@@ -39,6 +39,10 @@ jobs:
         run: npm ci
         working-directory: apps/desktop
 
+      - name: Generate App Icons
+        run: npx tauri icon src/assets/logo.png
+        working-directory: apps/desktop
+
       - name: Build Windows NSIS installer
         run: npx tauri build --bundles nsis
         working-directory: apps/desktop

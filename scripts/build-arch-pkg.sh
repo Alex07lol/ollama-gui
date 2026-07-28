@@ -17,6 +17,7 @@ rustup default stable
 # Build desktop app
 cd apps/desktop
 npm ci
+npx tauri icon src/assets/logo.png
 npx tauri build --no-bundle
 
 # Write package metadata

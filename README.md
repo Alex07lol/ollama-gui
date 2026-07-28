@@ -1,7 +1,7 @@
 # Ollama GUI
 
 <p align="center">
-  <img src="./assets/logo.jpg" width="160" alt="Ollama Monochrome Logo" />
+  <img src="./assets/logo.png" width="160" alt="Ollama Monochrome Logo" />
 </p>
 
 Ollama GUI is a local AI workspace interface for running LLMs. It features isolated workspaces, custom directive scopes, action planning, visual execution board progress flows, and multi-file code attachments.

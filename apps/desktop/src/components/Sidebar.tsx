@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Settings, Server, Trash, Edit, Keyboard, Download, Upload } from './Icons';
 import type { Conversation, ConnectionStatus, Workspace } from '../types';
-import ollamaLogo from '../assets/logo.jpg';
+import ollamaLogo from '../assets/logo.png';
 
 interface SidebarProps {
   workspaces: Workspace[];
