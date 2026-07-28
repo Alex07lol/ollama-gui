@@ -12,6 +12,13 @@ import type { Conversation, Message, OllamaModel, ConnectionStatus, Workspace, C
 export default function App() {
   const isAndroid = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
 
+  // Connection mode toggle
+  const [apiMode, setApiMode] = useState<'local' | 'cloud'>(() => {
+    const stored = localStorage.getItem('api_mode');
+    if (stored === 'local' || stored === 'cloud') return stored;
+    return isAndroid ? 'cloud' : 'local';
+  });
+
   // 1. Host & Key Settings
   const [ollamaHost, setOllamaHost] = useState(() => {
     return localStorage.getItem('ollama_host') || 'http://localhost:11434';
@@ -21,7 +28,7 @@ export default function App() {
     return val === null ? true : val === 'true';
   });
 
-  // Cloud API parameters (for Android only fallback)
+  // Cloud API parameters (for Android fallback & other versions)
   const [cloudBaseUrl, setCloudBaseUrl] = useState(() => {
     return localStorage.getItem('cloud_base_url') || 'https://openrouter.ai/api/v1';
   });
@@ -95,6 +102,10 @@ export default function App() {
   }, [enterToSend]);
 
   useEffect(() => {
+    localStorage.setItem('api_mode', apiMode);
+  }, [apiMode]);
+
+  useEffect(() => {
     localStorage.setItem('cloud_base_url', cloudBaseUrl);
   }, [cloudBaseUrl]);
 
@@ -122,7 +133,7 @@ export default function App() {
   const activeConversation = conversations.find((c) => c.id === activeConversationId) || null;
 
   // Deriving active models mapping
-  const models: OllamaModel[] = isAndroid
+  const models: OllamaModel[] = (apiMode === 'cloud')
     ? Array.from(
         new Set([
           cloudModel,
@@ -154,12 +165,16 @@ export default function App() {
   // Ollama/Cloud Connection polling
   const testConnection = async () => {
     setConnectionStatus('checking');
-    if (isAndroid) {
+    if (apiMode === 'cloud') {
+      if (!cloudApiKey.trim()) {
+        setConnectionStatus('disconnected');
+        return;
+      }
       try {
         const response = await fetch(`${cloudBaseUrl}/models`, {
-          headers: cloudApiKey ? { 'Authorization': `Bearer ${cloudApiKey}` } : {},
+          headers: { 'Authorization': `Bearer ${cloudApiKey.trim()}` },
         });
-        if (response.ok || response.status === 401 || response.status === 403) {
+        if (response.ok) {
           setConnectionStatus('connected');
         } else {
           setConnectionStatus('disconnected');
@@ -189,17 +204,21 @@ export default function App() {
 
   useEffect(() => {
     testConnection();
-  }, [ollamaHost, cloudBaseUrl, cloudApiKey]);
+  }, [ollamaHost, cloudBaseUrl, cloudApiKey, apiMode]);
 
   useEffect(() => {
     const timer = setInterval(() => {
       if (!isGenerating) {
-        if (isAndroid) {
+        if (apiMode === 'cloud') {
+          if (!cloudApiKey.trim()) {
+            setConnectionStatus('disconnected');
+            return;
+          }
           fetch(`${cloudBaseUrl}/models`, {
-            headers: cloudApiKey ? { 'Authorization': `Bearer ${cloudApiKey}` } : {},
+            headers: { 'Authorization': `Bearer ${cloudApiKey.trim()}` },
           })
             .then((res) => {
-              if (res.status === 200 || res.status === 401 || res.status === 403) {
+              if (res.ok) {
                 setConnectionStatus('connected');
               } else {
                 setConnectionStatus('disconnected');
@@ -973,6 +992,7 @@ Keep steps simple, actionable, and checklist-formatted.
         stepLogs={stepLogs}
         onNewConversation={handleNewConversation}
         updateAvailable={updateAvailable}
+        apiMode={apiMode}
       />
 
       {/* 3. Right Parameters Panel */}
@@ -1002,6 +1022,8 @@ Keep steps simple, actionable, and checklist-formatted.
         onSaveCloudApiKey={setCloudApiKey}
         cloudModel={cloudModel}
         onSaveCloudModel={setCloudModel}
+        apiMode={apiMode}
+        onSaveApiMode={setApiMode}
       />
 
       <ModelManager

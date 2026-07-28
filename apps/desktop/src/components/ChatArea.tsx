@@ -21,6 +21,7 @@ interface ChatAreaProps {
   stepLogs: { [stepId: string]: string };
   onNewConversation?: () => void;
   updateAvailable?: string | null;
+  apiMode?: 'local' | 'cloud';
 }
 
 export const ChatArea: React.FC<ChatAreaProps> = ({
@@ -40,6 +41,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   stepLogs,
   onNewConversation,
   updateAvailable,
+  apiMode = 'local',
 }) => {
   const [input, setInput] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -56,7 +58,6 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
-  const isAndroid = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
 
   const handleOneClickInstall = async () => {
     setInstalling(true);
@@ -106,7 +107,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   if (!conversation) {
     return (
       <div className="main-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', position: 'relative' }}>
-        {connectionStatus === 'disconnected' && !isAndroid && (
+        {connectionStatus === 'disconnected' && apiMode === 'local' && (
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-primary)', padding: '8px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
             <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>Ollama is not running or not detected.</span>
             <button 
@@ -282,7 +283,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
               {conversation.model}
             </span>
           </div>
-          {connectionStatus === 'disconnected' && !isAndroid && (
+          {connectionStatus === 'disconnected' && apiMode === 'local' && (
             <button 
               onClick={handleOneClickInstall}
               disabled={installing}

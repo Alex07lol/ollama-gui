@@ -19,6 +19,8 @@ interface SettingsModalProps {
   onSaveCloudApiKey: (val: string) => void;
   cloudModel: string;
   onSaveCloudModel: (val: string) => void;
+  apiMode: 'local' | 'cloud';
+  onSaveApiMode: (val: 'local' | 'cloud') => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -37,11 +39,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onSaveCloudApiKey,
   cloudModel,
   onSaveCloudModel,
+  apiMode,
+  onSaveApiMode,
 }) => {
   const [hostInput, setHostInput] = useState(ollamaHost);
   const [baseUrlInput, setBaseUrlInput] = useState(cloudBaseUrl);
   const [apiKeyInput, setApiKeyInput] = useState(cloudApiKey);
   const [modelInput, setModelInput] = useState(cloudModel);
+  const [apiModeInput, setApiModeInput] = useState<'local' | 'cloud'>(apiMode);
   const [testing, setTesting] = useState(false);
 
   if (!isOpen) return null;
@@ -51,8 +56,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       onSaveCloudBaseUrl(baseUrlInput.trim());
       onSaveCloudApiKey(apiKeyInput.trim());
       onSaveCloudModel(modelInput.trim());
+      onSaveApiMode('cloud');
     } else {
-      onSaveHost(hostInput.trim());
+      onSaveApiMode(apiModeInput);
+      if (apiModeInput === 'cloud') {
+        onSaveCloudBaseUrl(baseUrlInput.trim());
+        onSaveCloudApiKey(apiKeyInput.trim());
+        onSaveCloudModel(modelInput.trim());
+      } else {
+        onSaveHost(hostInput.trim());
+      }
     }
     onClose();
   };
@@ -63,8 +76,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       onSaveCloudBaseUrl(baseUrlInput.trim());
       onSaveCloudApiKey(apiKeyInput.trim());
       onSaveCloudModel(modelInput.trim());
+      onSaveApiMode('cloud');
     } else {
-      onSaveHost(hostInput.trim());
+      onSaveApiMode(apiModeInput);
+      if (apiModeInput === 'cloud') {
+        onSaveCloudBaseUrl(baseUrlInput.trim());
+        onSaveCloudApiKey(apiKeyInput.trim());
+        onSaveCloudModel(modelInput.trim());
+      } else {
+        onSaveHost(hostInput.trim());
+      }
     }
     await onTestConnection();
     setTesting(false);
@@ -84,8 +105,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         <div className="modal-body">
-          {isAndroid ? (
-            /* Cloud API Settings for Android only */
+          {/* Connection Mode Selection (only on desktop/other versions; Android is locked to cloud) */}
+          {!isAndroid && (
+            <div className="flex flex-col gap-1.5" style={{ marginBottom: '8px' }}>
+              <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                API Connection Mode
+              </label>
+              <select
+                value={apiModeInput}
+                onChange={(e) => setApiModeInput(e.target.value as 'local' | 'cloud')}
+                style={{ width: '100%' }}
+              >
+                <option value="local">Local Ollama Instance</option>
+                <option value="cloud">Cloud API Provider (OpenRouter / Groq / OpenAI)</option>
+              </select>
+            </div>
+          )}
+
+          {isAndroid || apiModeInput === 'cloud' ? (
+            /* Cloud API Settings */
             <div className="flex flex-col gap-3">
               <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Cloud API Configuration
@@ -111,10 +149,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   style={{
                     backgroundColor: 'var(--surface)',
                     border: '1px solid var(--border-primary)',
-                    padding: '6px 10px',
+                    padding: '4px 8px',
                     color: 'var(--text-primary)',
                     borderRadius: '6px',
-                    outline: 'none'
+                    outline: 'none',
+                    fontSize: '12px'
                   }}
                 />
               </div>
@@ -153,7 +192,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
             </div>
           ) : (
-            /* Host URL Section for Desktop */
+            /* Host URL Section for Local Ollama */
             <div className="flex flex-col gap-2">
               <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Ollama Host URL
