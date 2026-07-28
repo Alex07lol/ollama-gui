@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search } from './Icons';
 import type { OllamaModel, Conversation } from '../types';
 
@@ -89,10 +89,10 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     },
   ];
 
-  const modelCommands: CommandItem[] = models.map((model) => ({
+  const modelCommands: CommandItem[] = (models || []).map((model) => ({
     id: `model-${model.name}`,
     title: `Switch model: ${model.name}`,
-    subtitle: `Quantization: ${model.details.quantization_level || 'unknown'} • Size: ${(model.size / (1024 * 1024 * 1024)).toFixed(2)} GB`,
+    subtitle: `Quantization: ${model.details?.quantization_level || 'unknown'} • Size: ${((model.size || 0) / (1024 * 1024 * 1024)).toFixed(2)} GB`,
     category: 'Models',
     action: () => {
       onSelectModel(model.name);
@@ -100,10 +100,10 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     },
   }));
 
-  const conversationCommands: CommandItem[] = conversations.map((conv) => ({
+  const conversationCommands: CommandItem[] = (conversations || []).map((conv) => ({
     id: `conv-${conv.id}`,
     title: `Open chat: ${conv.title}`,
-    subtitle: `Model: ${conv.model} • ${conv.messages.length} messages`,
+    subtitle: `Model: ${conv.model} • ${(conv.messages || []).length} messages`,
     category: 'Chat History',
     action: () => {
       onSelectConversation(conv.id);

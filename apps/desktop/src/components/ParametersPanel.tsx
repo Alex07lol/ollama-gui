@@ -1,3 +1,4 @@
+import React from 'react';
 import { Cpu, Info } from './Icons';
 import type { Conversation, OllamaModel } from '../types';
 
