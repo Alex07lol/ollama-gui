@@ -1,6 +1,6 @@
-use std::process::Command;
 use std::fs::File;
 use std::io::Write;
+use std::process::Command;
 
 #[tauri::command]
 fn get_workspace_info() -> String {
@@ -14,17 +14,17 @@ async fn install_ollama() -> Result<String, String> {
         let url = "https://ollama.com/download/OllamaSetup.exe";
         let temp_dir = std::env::temp_dir();
         let installer_path = temp_dir.join("OllamaSetup.exe");
-        
+
         let response = reqwest::get(url).await.map_err(|e| e.to_string())?;
         let bytes = response.bytes().await.map_err(|e| e.to_string())?;
-        
+
         let mut file = File::create(&installer_path).map_err(|e| e.to_string())?;
         file.write_all(&bytes).map_err(|e| e.to_string())?;
-        
+
         Command::new(&installer_path)
             .spawn()
             .map_err(|e| format!("Failed to start Ollama installer: {}", e))?;
-            
+
         Ok("Ollama installer downloaded and launched successfully.".into())
     }
 
@@ -33,7 +33,7 @@ async fn install_ollama() -> Result<String, String> {
         let child = Command::new("pkexec")
             .args(["sh", "-c", "curl -fsSL https://ollama.com/install.sh | sh"])
             .spawn();
-            
+
         match child {
             Ok(_) => Ok("Ollama installation started via pkexec.".into()),
             Err(_) => {
