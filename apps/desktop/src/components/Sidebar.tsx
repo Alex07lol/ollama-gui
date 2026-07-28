@@ -21,6 +21,9 @@ interface SidebarProps {
   onToggleCommandPalette: () => void;
   onExportConversations: () => void;
   onImportConversations: () => void;
+  indexedFiles: { path: string; content: string; size: number }[];
+  onOpenFile: (path: string, content: string) => void;
+  onAddVirtualFile: (path: string, content: string) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -41,10 +44,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleCommandPalette,
   onExportConversations,
   onImportConversations,
+  indexedFiles,
+  onOpenFile,
+  onAddVirtualFile,
 }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [searchFilter, setSearchFilter] = useState('');
+  const [activeTab, setActiveTab] = useState<'chats' | 'files'>('chats');
 
   const handleStartRename = (e: React.MouseEvent, conv: Conversation) => {
     e.stopPropagation();
@@ -67,8 +74,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
+  const handleTriggerFileUpload = () => {
+    document.getElementById('workspace-file-uploader')?.click();
+  };
+
+  const handleLocalFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      onAddVirtualFile(file.name, content);
+    };
+    reader.readAsText(file);
+    e.target.value = ''; // reset
+  };
+
   const filteredConversations = conversations.filter((conv) =>
     conv.title.toLowerCase().includes(searchFilter.toLowerCase())
+  );
+
+  const filteredFiles = indexedFiles.filter((file) =>
+    file.path.toLowerCase().includes(searchFilter.toLowerCase())
   );
 
   return (
@@ -180,11 +207,45 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </div>
 
-      {/* Filter conversations input */}
+      {/* Tabs Selector */}
+      <div className="flex gap-1" style={{ padding: '4px 10px 4px 10px' }}>
+        <button
+          onClick={() => { setActiveTab('chats'); setSearchFilter(''); }}
+          style={{
+            flex: 1,
+            padding: '4px 8px',
+            fontSize: '11px',
+            borderRadius: '4px',
+            border: 'none',
+            backgroundColor: activeTab === 'chats' ? 'var(--surface)' : 'transparent',
+            color: activeTab === 'chats' ? 'var(--text-primary)' : 'var(--text-secondary)',
+            cursor: 'pointer'
+          }}
+        >
+          Chats
+        </button>
+        <button
+          onClick={() => { setActiveTab('files'); setSearchFilter(''); }}
+          style={{
+            flex: 1,
+            padding: '4px 8px',
+            fontSize: '11px',
+            borderRadius: '4px',
+            border: 'none',
+            backgroundColor: activeTab === 'files' ? 'var(--surface)' : 'transparent',
+            color: activeTab === 'files' ? 'var(--text-primary)' : 'var(--text-secondary)',
+            cursor: 'pointer'
+          }}
+        >
+          Files ({indexedFiles.length})
+        </button>
+      </div>
+
+      {/* Filter input */}
       <div style={{ padding: '4px 10px 8px 10px' }}>
         <input
           type="text"
-          placeholder="Filter chats..."
+          placeholder={activeTab === 'chats' ? 'Filter chats...' : 'Filter files...'}
           value={searchFilter}
           onChange={(e) => setSearchFilter(e.target.value)}
           style={{ 
@@ -197,7 +258,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         />
       </div>
 
-      {/* Chat History List */}
+      {/* Conditional List Render */}
       <div 
         style={{ 
           flex: 1, 
@@ -208,108 +269,189 @@ export const Sidebar: React.FC<SidebarProps> = ({
           gap: '2px'
         }}
       >
-        <span style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '6px 6px 2px 6px' }}>
-          Chats
-        </span>
-        
-        {filteredConversations.length === 0 ? (
-          <div style={{ padding: '16px 8px', color: 'var(--text-muted)', fontSize: '11.5px', fontStyle: 'italic' }}>
-            No sessions
-          </div>
-        ) : (
-          filteredConversations.map((conv) => {
-            const isActive = conv.id === activeConversationId;
-            const isEditing = conv.id === editingId;
-
-            return (
-              <div
-                key={conv.id}
-                onClick={() => !isEditing && onSelectConversation(conv.id)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '7px 8px',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  backgroundColor: isActive ? 'var(--bg-primary)' : 'transparent',
-                  border: isActive ? '1px solid var(--border-primary)' : '1px solid transparent',
-                  borderLeft: isActive ? '2px solid var(--status-blue)' : '2px solid transparent',
-                }}
-                className="chat-item"
-                onMouseOver={(e) => {
-                  if (!isActive) e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
-                }}
-                onMouseOut={(e) => {
-                  if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
-                }}
-              >
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
-                    onBlur={() => handleSaveRename(conv.id)}
-                    onKeyDown={(e) => handleKeyDown(e, conv.id)}
-                    autoFocus
-                    style={{ 
-                      width: '100%', 
-                      fontSize: '11.5px', 
-                      padding: '2px 4px', 
-                      backgroundColor: 'var(--bg-secondary)', 
-                      borderColor: 'var(--border-focus)' 
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                ) : (
-                  <div className="flex flex-col" style={{ overflow: 'hidden', flex: 1 }}>
-                    <span 
-                      style={{ 
-                        color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
-                        whiteSpace: 'nowrap',
-                        textOverflow: 'ellipsis',
-                        overflow: 'hidden',
-                        fontSize: '12px'
-                      }}
-                    >
-                      {conv.title}
-                    </span>
-                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', fontFamily: 'var(--mono-font)' }}>
-                      {conv.model}
-                    </span>
-                  </div>
-                )}
-
-                {/* Edit/Delete actions */}
-                {!isEditing && (
-                  <div 
-                    className="flex gap-1 actions" 
-                    style={{ 
-                      opacity: isActive ? 1 : 0, 
-                      transition: 'opacity 0.15s ease',
-                      marginLeft: '4px'
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <button 
-                      className="icon-btn" 
-                      onClick={(e) => handleStartRename(e, conv)}
-                      style={{ padding: '2px' }}
-                    >
-                      <Edit size={11} />
-                    </button>
-                    <button 
-                      className="icon-btn danger" 
-                      onClick={() => onDeleteConversation(conv.id)}
-                      style={{ padding: '2px' }}
-                    >
-                      <Trash size={11} />
-                    </button>
-                  </div>
-                )}
+        {activeTab === 'chats' ? (
+          <>
+            <span style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '6px 6px 2px 6px' }}>
+              Chats
+            </span>
+            
+            {filteredConversations.length === 0 ? (
+              <div style={{ padding: '16px 8px', color: 'var(--text-muted)', fontSize: '11.5px', fontStyle: 'italic' }}>
+                No sessions
               </div>
-            );
-          })
+            ) : (
+              filteredConversations.map((conv) => {
+                const isActive = conv.id === activeConversationId;
+                const isEditing = conv.id === editingId;
+
+                return (
+                  <div
+                    key={conv.id}
+                    onClick={() => !isEditing && onSelectConversation(conv.id)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '7px 8px',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      backgroundColor: isActive ? 'var(--bg-primary)' : 'transparent',
+                      border: isActive ? '1px solid var(--border-primary)' : '1px solid transparent',
+                      borderLeft: isActive ? '2px solid var(--status-blue)' : '2px solid transparent',
+                    }}
+                    className="chat-item"
+                    onMouseOver={(e) => {
+                      if (!isActive) e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
+                    }}
+                    onMouseOut={(e) => {
+                      if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
+                  >
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        onBlur={() => handleSaveRename(conv.id)}
+                        onKeyDown={(e) => handleKeyDown(e, conv.id)}
+                        autoFocus
+                        style={{ 
+                          width: '100%', 
+                          fontSize: '11.5px', 
+                          padding: '2px 4px', 
+                          backgroundColor: 'var(--bg-secondary)', 
+                          borderColor: 'var(--border-focus)' 
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    ) : (
+                      <div className="flex flex-col" style={{ overflow: 'hidden', flex: 1 }}>
+                        <span 
+                          style={{ 
+                            color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+                            whiteSpace: 'nowrap',
+                            textOverflow: 'ellipsis',
+                            overflow: 'hidden',
+                            fontSize: '12px'
+                          }}
+                        >
+                          {conv.title}
+                        </span>
+                        <span style={{ fontSize: '10px', color: 'var(--text-muted)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', fontFamily: 'var(--mono-font)' }}>
+                          {conv.model}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Edit/Delete actions */}
+                    {!isEditing && (
+                      <div 
+                        className="flex gap-1 actions" 
+                        style={{ 
+                          opacity: isActive ? 1 : 0, 
+                          transition: 'opacity 0.15s ease',
+                          marginLeft: '4px'
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <button 
+                          className="icon-btn" 
+                          onClick={(e) => handleStartRename(e, conv)}
+                          style={{ padding: '2px' }}
+                        >
+                          <Edit size={11} />
+                        </button>
+                        <button 
+                          className="icon-btn danger" 
+                          onClick={() => onDeleteConversation(conv.id)}
+                          style={{ padding: '2px' }}
+                        >
+                          <Trash size={11} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </>
+        ) : (
+          <>
+            <span style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '6px 6px 4px 6px' }}>
+              Workspace Files
+            </span>
+            
+            {/* Import file button */}
+            <div className="flex flex-col gap-2 w-100" style={{ padding: '0 6px 8px 6px' }}>
+              <button
+                onClick={handleTriggerFileUpload}
+                className="secondary flex justify-center items-center gap-1.5"
+                style={{ width: '100%', padding: '5px 10px', fontSize: '11px', borderColor: 'var(--border-primary)' }}
+              >
+                <Plus size={11} />
+                <span>Import File</span>
+              </button>
+              <input
+                type="file"
+                id="workspace-file-uploader"
+                onChange={handleLocalFileImport}
+                style={{ display: 'none' }}
+              />
+            </div>
+
+            {filteredFiles.length === 0 ? (
+              <div style={{ padding: '16px 8px', color: 'var(--text-muted)', fontSize: '11.5px', fontStyle: 'italic' }}>
+                No matching files
+              </div>
+            ) : (
+              filteredFiles.map((file) => {
+                const formatSize = (bytes: number) => {
+                  if (bytes === 0) return '0 B';
+                  const k = 1024;
+                  const sizes = ['B', 'KB', 'MB'];
+                  const i = Math.floor(Math.log(bytes) / Math.log(k));
+                  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+                };
+                return (
+                  <div
+                    key={file.path}
+                    onClick={() => onOpenFile(file.path, file.content)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '6px 8px',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      backgroundColor: 'transparent',
+                      border: '1px solid transparent'
+                    }}
+                    className="chat-item"
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-hover)'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <div className="flex flex-col" style={{ overflow: 'hidden', flex: 1 }}>
+                      <span 
+                        style={{ 
+                          color: 'var(--text-primary)',
+                          whiteSpace: 'nowrap',
+                          textOverflow: 'ellipsis',
+                          overflow: 'hidden',
+                          fontSize: '12px',
+                          fontFamily: 'var(--mono-font)'
+                        }}
+                      >
+                        {file.path.split('/').pop()}
+                      </span>
+                      <span style={{ fontSize: '10px', color: 'var(--text-muted)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                        {file.path} • {formatSize(file.size)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </>
         )}
       </div>
 

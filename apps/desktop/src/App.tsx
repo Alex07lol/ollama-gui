@@ -6,6 +6,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { ModelManager } from './components/ModelManager';
 import { CommandPalette } from './components/CommandPalette';
 import { WorkspaceModal } from './components/WorkspaceModal';
+import { CodeEditorOverlay } from './components/CodeEditorOverlay';
 import { parsePlan } from './utils/planParser';
 import type { Conversation, Message, OllamaModel, ConnectionStatus, Workspace, ConversationMode, PlanStep } from './types';
 
@@ -77,6 +78,9 @@ export default function App() {
   const [isWorkspaceModalOpen, setIsWorkspaceModalOpen] = useState(false);
   const [isWorkspaceConfigMode, setIsWorkspaceConfigMode] = useState(false); // edit vs create
   const [updateAvailable, setUpdateAvailable] = useState<string | null>(null);
+
+  // Code Editor State
+  const [openFile, setOpenFile] = useState<{ path: string; content: string } | null>(null);
 
   // Agent generation & Execution States
   const [isGenerating, setIsGenerating] = useState(false);
@@ -932,7 +936,61 @@ Keep steps simple, actionable, and checklist-formatted.
       }
     };
     reader.readAsText(file);
-    e.target.value = ''; // Reset input
+  };
+
+  const handleOpenFile = (path: string, content: string) => {
+    setOpenFile({ path, content });
+  };
+
+  const handleSaveFile = async (path: string, newContent: string) => {
+    try {
+      const res = await fetch('http://localhost:11435/api/fs/write', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path, content: newContent }),
+      });
+      if (res.ok) {
+        alert('File saved successfully to local disk!');
+      } else {
+        throw new Error('Companion API write failed');
+      }
+    } catch (err) {
+      alert('Saved to workspace virtual memory (simulation mode).');
+    }
+
+    setWorkspaces((prev) =>
+      prev.map((ws) =>
+        ws.id === activeWorkspaceId
+          ? {
+              ...ws,
+              indexedFiles: ws.indexedFiles.map((f) =>
+                f.path === path ? { ...f, content: newContent, size: newContent.length } : f
+              ),
+            }
+          : ws
+      )
+    );
+
+    setOpenFile({ path, content: newContent });
+  };
+
+  const handleAddVirtualFile = (filename: string, content: string) => {
+    const newFile = {
+      path: `./${filename}`,
+      size: content.length,
+      content: content,
+      indexedAt: Date.now(),
+    };
+    setWorkspaces((prev) =>
+      prev.map((ws) =>
+        ws.id === activeWorkspaceId
+          ? {
+              ...ws,
+              indexedFiles: [newFile, ...ws.indexedFiles],
+            }
+          : ws
+      )
+    );
   };
 
   return (
@@ -983,6 +1041,9 @@ Keep steps simple, actionable, and checklist-formatted.
           onToggleCommandPalette={() => setIsCommandPaletteOpen(true)}
           onExportConversations={handleExportConversations}
           onImportConversations={handleImportConversations}
+          indexedFiles={activeWorkspace ? activeWorkspace.indexedFiles : []}
+          onOpenFile={handleOpenFile}
+          onAddVirtualFile={handleAddVirtualFile}
         />
       </div>
 
@@ -1069,6 +1130,14 @@ Keep steps simple, actionable, and checklist-formatted.
         onClose={() => setIsWorkspaceModalOpen(false)}
         activeWorkspace={isWorkspaceConfigMode ? activeWorkspace : null}
         onSaveWorkspace={handleSaveWorkspaceConfig}
+      />
+
+      <CodeEditorOverlay
+        isOpen={!!openFile}
+        onClose={() => setOpenFile(null)}
+        filePath={openFile?.path || ''}
+        initialContent={openFile?.content || ''}
+        onSave={handleSaveFile}
       />
     </div>
   );
